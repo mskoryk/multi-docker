@@ -1,0 +1,41 @@
+language: generic
+sudo: required
+services:
+    - docker
+
+before_install:
+    - docker build -t mskoryk/react-test -f ./client/Dockerfile.dev ./client
+
+script:
+    - docker run -e CI=true mskoryk/react-test npm run test -- --coverage
+
+after_success:
+    - docker build -t mskoryk/multi-client ./client
+    - docker build -t mskoryk/multi-nginx ./nginx
+    - docker build -t mskoryk/multi-server ./server
+    - docker build -t mskoryk/multi-worker ./worker
+
+    # Log in to the docker CLI
+    - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_ID" --password-stdin
+
+    # Push images to docker hub
+    - docker push mskoryk/multi-client
+    - docker push mskoryk/multi-nginx
+    - docker push mskoryk/multi-server
+    - docker push mskoryk/multi-worker
+
+
+
+# deploy:
+#     provider: elasticbeanstalk
+#     region: "us-east-2"
+#     app: "docker-react"
+#     env: "DockerReact-env"
+#     bucket_name: "elasticbeanstalk-us-east-2-899941107777"
+#     bucket_path: "docker-react"
+#     on:
+#         branch: master
+
+#     access_key_id: $AWS_ACCESS_KEY
+#     secret_access_key: $AWS_SECRET_KEY
+    
